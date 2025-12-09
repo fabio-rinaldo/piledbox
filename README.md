@@ -112,7 +112,7 @@ uv tool install .
 
 ### Ansible
 
-Available soon.
+Playbooks to provision a microSD card and deploy **piledbox** to a RPi5 via SSH are available at [this repository](https://github.com/fabio-rinaldo/piledbox-ansible).
 
 ## Configuration
 
