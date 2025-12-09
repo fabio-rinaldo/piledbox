@@ -1,0 +1,30 @@
+[project]
+name = "piledbox"
+version = "0.1.0"
+description = "A WS28xx LED driver with sACN input"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "adafruit-blinka-raspberry-pi5-neopixel",
+    "adafruit-circuitpython-pixelbuf==2.0.7",
+    "dash==3.3.0",
+    "dash-bootstrap-components==2.0.4",
+    "fastapi==0.123.5",
+    "hypercorn==0.18.0",
+    "lgpio==0.2.2.0",
+    "psutil==7.0.0",
+    "pydantic==2.12.5",
+    "pyyaml==6.0.2",
+    "rpi-gpio==0.7.1",
+    "sacn==1.11.0",
+]
+
+[project.scripts]
+piledbox = "piledbox:cli.main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+adafruit-blinka-raspberry-pi5-neopixel = {git = "https://github.com/fabio-rinaldo/Adafruit_Blinka_Raspberry_Pi5_Neopixel.git", rev ="61afcd7c93187160b7665ae8cb7803edec43dc6e"}
