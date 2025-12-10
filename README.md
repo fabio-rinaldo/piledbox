@@ -1,6 +1,6 @@
 # piledbox
 
-A WS28xx LED driver for Raspberry Pi 5 that receives sACN (E1.31) and outputs to LED fixtures via GPIO.
+A WS281x LED driver for Raspberry Pi 5 that receives sACN (E1.31) and outputs to LED fixtures via GPIO.
 
 ## Features
 
@@ -187,7 +187,7 @@ You can define 1 to 4 outputs (`out1`, `out2`, `out3`, `out4`):
     - Each strip must fit within a single 512-channel universe
     - For rgb8: each pixel uses 3 channels, so 170 pixels max per universe
 
-The order in which strips are declared matters, as the WS28xx protocol outputs data serially. First strip declared in the array should be the first one physically connected to the GPIO output.
+The order in which strips are declared matters, as the WS281x protocol outputs data serially. First strip declared in the array should be the first one physically connected to the GPIO output.
 
 ## How to use
 
