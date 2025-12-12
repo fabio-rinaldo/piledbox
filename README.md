@@ -243,4 +243,4 @@ This project is free software, licensed under the GNU General Public License v2.
 
 This project dependancies include [Adafruit](https://www.adafruit.com/)'s [Neopixel](https://github.com/adafruit/Adafruit_Blinka_Raspberry_Pi5_Neopixel) library.
 
-The library has been modified by the author ( [project link](https://github.com/fabio-rinaldo/Adafruit_Blinka_Raspberry_Pi5_Neopixel/tree/quad-sm) ) to support 4 GPIO outputs.
+The library has been modified by the author ( [project link](https://github.com/fabio-rinaldo/Adafruit_Blinka_Raspberry_Pi5_Neopixel/tree/quad-sm) ) to all 4 state machines provided by the RPi5.
