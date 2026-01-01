@@ -9,6 +9,7 @@ from .project_logger import getMainLogger
 from .fixture_definitions import SACN_UNI_MAX
 from .universedata import UniverseData
 from .frontend_models import UniverseInfoReport, UniverseInfo
+from .misc import WORKER_LED_REFRESH_RATE
 
 
 @dataclass
@@ -32,26 +33,23 @@ class sACNmanager:
     """
 
     _logger = getMainLogger()
-    _queueRefreshRate = 40
-    """ how often the sacnShareQueue should be updated [Hz]"""
-    _queueRefreshDelta = timedelta(microseconds=(pow(10, 6) / _queueRefreshRate))
-    """ how often the sacnShareQueue should be updated [microseconds]"""
-    _queueSize = 10
-    """
-    Size of the sacnShareQueue
-    """
+    _queueRefreshDelta = timedelta(microseconds=(pow(10, 6) / WORKER_LED_REFRESH_RATE))
+    """How often the sacnShareQueue should be updated [microseconds]"""
+    _queueSize = 50
+    """Size of the sacnShareQueue"""
 
     def __init__(self, ipAddress: str):
         self._db: dict[int, TimedDataPacket] = {}
-        """ 
-        Dict storing references to all DmxBuffers created
-        """
-        self.lastQueueUpdateTs = datetime.now()
-        """Timestamp when sacnShareQueue was last updated"""
-        self._sACNrx = sacn.sACNreceiver(bind_address=ipAddress)
+        """Dict storing references to all DmxBuffers created"""
+        self.lastQueueUpdateTs: dict[int, timedelta] = {}
+        """Timestamp when sacnShareQueue was last updated, per universe"""
         self._registeredUniverses: list[int] = []
         """List of universes that have been registered to listen to"""
+
+        self._sACNrx = sacn.sACNreceiver(bind_address=ipAddress)
+
         self.sacnShareQueue = get_context("spawn").Queue(self._queueSize)
+        """Multiprocess queue to send data to GPIO worker"""
 
     def __del__(self):
         self._sACNrx.stop()
@@ -67,10 +65,7 @@ class sACNmanager:
         )
 
     def stop(self):
-        """
-        Stop the sACN receiver thread, cleanup task, clears sACN shared memory block\n
-        Must be called before exiting script\n
-        """
+        """Stop the sACN receiver thread, cleanup task, clears sACN shared memory block"""
         self._logger.info(f"Stopping sACN receiver...")
         self._sACNrx.stop()
         # Clear sACN Queue
@@ -107,9 +102,11 @@ class sACNmanager:
 
     def _onPacketReceived(self, packet: DataPacket):
         """
-        Async function called when a new sACN packet is received\n
-        Load sacn DataPacket to internal db with added timestamp\n
-        Internal only\n
+        Async function called when a new sACN packet is received
+
+        Load sacn DataPacket to internal db with added timestamp
+
+        Internal only
         """
         # Ignore non-DMX-data packets
         if packet.dmxStartCode != 0x00:
@@ -132,14 +129,18 @@ class sACNmanager:
         newPacketTs = datetime.now()
         self._db[packet.universe] = TimedDataPacket(packet, newPacketTs)
 
-        # Queue update frequency tied to [_queueRefreshRate]
-        if (newPacketTs - self.lastQueueUpdateTs) >= self._queueRefreshDelta:
-            self.lastQueueUpdateTs = newPacketTs
+        # Queue update frequency tied to worker refresh rate
+        if (not packet.universe in self.lastQueueUpdateTs.keys()) or (
+            (newPacketTs - self.lastQueueUpdateTs[packet.universe])
+            >= (self._queueRefreshDelta * 0.9)
+        ):
+            self.lastQueueUpdateTs[packet.universe] = newPacketTs
             self._updateQueue()
 
     def _updateQueue(self):
         """
         Push latest sACN data to sacnShareQueue, to share with GPIO worker process
+
         Internal only
         """
         if not self.sacnShareQueue:
@@ -156,6 +157,9 @@ class sACNmanager:
                 self.sacnShareQueue.get(False)
             except Empty:
                 self._logger.error(f"Failed to free space on sACN data share")
+                return
+            except ValueError:
+                # self._logger.error(f'Error writing sACN data share: {err}')
                 return
             # try to write again, return if still full
             if not self.sacnShareQueue.full():
